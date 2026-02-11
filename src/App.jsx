@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, User, Briefcase, Building, LogIn, LogOut, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import usiLogo from './assets/usi-logo.avif';
+import { supabase } from './supabaseClient';
 
 const Header = () => (
   <header className="bg-usi-green text-white shadow-lg border-b-4 border-usi-gold">
@@ -37,47 +38,53 @@ const InputField = ({ label, icon: Icon, ...props }) => (
 );
 
 function App() {
-  const [formData, setFormData] = useState({
-    name: '',
-    designation: '',
-    department: '',
-  });
+  const [formData, setFormData] = useState({ name: '', designation: '', department: '' });
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [logs, setLogs] = useState(() => {
-    const saved = localStorage.getItem('usi-attendance-logs');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [currentTime, setCurrentTime] = useState(new Date());
-
+  // 1. Fetch data from Supabase on load
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    fetchLogs();
+
+    // 2. REAL-TIME MAGIC: Listen for new entries automatically
+    const subscription = supabase
+      .channel('attendance_changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance' }, (payload) => {
+        setLogs((prev) => [payload.new, ...prev]);
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(subscription);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('usi-attendance-logs', JSON.stringify(logs));
-  }, [logs]);
+  async function fetchLogs() {
+    const { data, error } = await supabase
+      .from('attendance')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (error) console.log('error', error);
+    else setLogs(data);
+    setLoading(false);
+  }
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // 3. Save to Supabase
+  const handleLog = async (type) => {
+    if (!formData.name) return alert("Please enter name.");
 
-  const handleLog = (type) => {
-    if (!formData.name) {
-      alert("Please enter the employee name.");
-      return;
-    }
+    const { error } = await supabase
+      .from('attendance')
+      .insert([{ 
+        name: formData.name, 
+        designation: formData.designation, 
+        department: formData.department,
+        type: type 
+      }]);
 
-    const newLog = {
-      id: Date.now(),
-      ...formData,
-      type,
-      timestamp: new Date().toISOString(),
-    };
-
-    setLogs([newLog, ...logs]);
-  };
+    if (error) alert(error.message);
+    
+  }; 
 
   const clearLogs = () => {
     if(confirm("Are you sure you want to clear the history?")) {
