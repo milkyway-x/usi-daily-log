@@ -2,16 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, User, Briefcase, Building, LogIn, LogOut, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import usiLogo from './assets/usi-logo.avif';
 
 const Header = () => (
   <header className="bg-usi-green text-white shadow-lg border-b-4 border-usi-gold">
     <div className="max-w-4xl mx-auto p-6 flex items-center gap-4">
-      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border-4 border-usi-gold shadow-md">
-        <span className="text-usi-green font-bold text-2xl">USI</span>
+      {/* Updated Logo Section */}
+      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center border-4 border-usi-gold shadow-md overflow-hidden">
+        <img 
+          src={usiLogo} 
+          alt="USI Logo" 
+          className="w-full h-full object-contain p-1" 
+        />
       </div>
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Daily Attendance Log</h1>
-        <p className="text-usi-gold font-medium text-lg">Universidad de Santa Isabel</p>
+        <h1 className="text-3xl font-bold tracking-tight leading-tight">Daily Attendance Log</h1>
+        <p className="text-usi-gold font-medium text-lg uppercase tracking-wider">Universidad de Santa Isabel</p>
       </div>
     </div>
   </header>
